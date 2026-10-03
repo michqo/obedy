@@ -1,6 +1,5 @@
 import { fetchAllMenus } from "@/lib/scraper"
 import { MenuCard } from "@/components/menu-card"
-import { PageTransition } from "@/components/page-transition"
 
 export default async function Home() {
   const menus = await fetchAllMenus()
@@ -12,13 +11,11 @@ export default async function Home() {
         <p className="text-muted-foreground">Aktuálna ponuka obedov v okolí.</p>
       </div>
 
-      <PageTransition>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {menus.map((menu) => (
-            <MenuCard key={menu.id} menu={menu} />
-          ))}
-        </div>
-      </PageTransition>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {menus.map((menu) => (
+          <MenuCard key={menu.id} menu={menu} />
+        ))}
+      </div>
     </main>
   )
 }

@@ -1,57 +1,62 @@
-"use client";
+"use client"
 
-import { Moon, Sun, SunMoon } from "lucide-react";
-import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
+import { useSyncExternalStore } from "react"
+import { Moon, Sun, SunMoon } from "lucide-react"
+import { useTheme } from "next-themes"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 
 const themes = [
   { id: "light", label: "Light", Icon: Sun },
   { id: "dark", label: "Dark", Icon: Moon },
   { id: "system", label: "System", Icon: SunMoon },
-] as const;
+] as const
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme()
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
+  const TriggerIcon = !mounted ? SunMoon : resolvedTheme === "dark" ? Moon : Sun
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Toggle theme">
-          <Sun className="h-4 w-4 scale-100 transition-all duration-500 ease-out dark:scale-0" />
-          <Moon className="absolute h-4 w-4 scale-0 transition-all duration-500 ease-out dark:scale-100" />
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Toggle theme"
+          className="size-11 cursor-pointer rounded-md"
+        >
+          <TriggerIcon aria-hidden="true" className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36 font-mono p-1">
-        {themes.map(({ id, label, Icon }) => {
-          const isActive = theme === id;
-          return (
-            <DropdownMenuItem
+      <DropdownMenuContent align="end" className="w-36 p-1">
+        <DropdownMenuRadioGroup
+          value={theme ?? "system"}
+          onValueChange={setTheme}
+        >
+          {themes.map(({ id, label, Icon }) => (
+            <DropdownMenuRadioItem
               key={id}
-              onClick={() => setTheme(id)}
-              className={cn(
-                "relative cursor-pointer px-3 py-3 text-xs transition-colors",
-                isActive
-                  ? "bg-primary/5 text-primary"
-                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-              )}
+              value={id}
+              className="min-h-11 cursor-pointer pr-8 pl-3 text-sm data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
             >
-              {isActive && (
-                <span className="absolute left-0 top-1/2 h-3 w-px -translate-y-1/2 bg-primary" />
-              )}
-              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <Icon aria-hidden="true" className="size-4" />
               {label}
-            </DropdownMenuItem>
-          );
-        })}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
