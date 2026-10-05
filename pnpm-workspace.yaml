@@ -1,3 +1,4 @@
-
+allowBuilds:
+  esbuild: true
 minimumReleaseAgeExclude:
   - "@miqal/theme@0.2.0"

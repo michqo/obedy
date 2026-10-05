@@ -1,21 +1,30 @@
-import { fetchAllMenus } from "@/lib/scraper"
-import { MenuCard } from "@/components/menu-card"
+import { DiscoveryWorkspace } from "@/components/discovery-workspace"
+import { defaultMenuDate, validDate } from "@/lib/discovery"
+import { fetchMenuContext } from "@/lib/scraper"
 
-export default async function Home() {
-  const menus = await fetchAllMenus()
-
+export const dynamic = "force-dynamic"
+export const maxDuration = 90
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const query = await searchParams
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query))
+    if (typeof value === "string") params.set(key, value)
+  const { menus, today, referenceTime } = await fetchMenuContext()
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
-      <div className="mb-8 space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Denné Menu</h1>
-        <p className="text-muted-foreground">Aktuálna ponuka obedov v okolí.</p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {menus.map((menu) => (
-          <MenuCard key={menu.id} menu={menu} />
-        ))}
-      </div>
-    </main>
+    <DiscoveryWorkspace
+      key={params.toString()}
+      initialMenus={menus}
+      initialDate={
+        validDate(params.get("date") ?? "")
+          ? params.get("date")!
+          : defaultMenuDate(menus, today)
+      }
+      today={today}
+      referenceTime={referenceTime}
+    />
   )
 }

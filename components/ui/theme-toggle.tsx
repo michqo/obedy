@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const themes = [
-  { id: "light", label: "Light", Icon: Sun },
-  { id: "dark", label: "Dark", Icon: Moon },
-  { id: "system", label: "System", Icon: SunMoon },
+  { id: "light", label: "Svetlá", Icon: Sun },
+  { id: "dark", label: "Tmavá", Icon: Moon },
+  { id: "system", label: "Podľa systému", Icon: SunMoon },
 ] as const
 
 export function ThemeToggle() {
@@ -34,13 +34,13 @@ export function ThemeToggle() {
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Toggle theme"
+          aria-label="Zmeniť vzhľad"
           className="size-11 cursor-pointer rounded-md"
         >
           <TriggerIcon aria-hidden="true" className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36 p-1">
+      <DropdownMenuContent align="end" className="w-44 p-1">
         <DropdownMenuRadioGroup
           value={theme ?? "system"}
           onValueChange={setTheme}

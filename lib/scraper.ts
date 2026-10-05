@@ -1,177 +1,150 @@
-import { unstable_cache } from "next/cache"
-import * as cheerio from "cheerio"
-import { RestaurantMenu, DayMenu, MenuItem } from "@/types/menu"
+import { createHash } from "node:crypto"
+import { PARSER_VERSION, todayInBratislava } from "@/lib/discovery"
+import { RESTAURANTS } from "@/lib/restaurants"
+import { MenuParseError, parseSource } from "@/lib/menus/adapters"
+import { readSnapshot, writeSnapshot } from "@/lib/menus/repository"
+import { menuSourceRequest } from "@/lib/menus/source-request"
+import type { Restaurant, RestaurantMenu } from "@/types/menu"
 
-const DAYS_SK = ["Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok"]
+const inFlight = new Map<string, Promise<RestaurantMenu>>()
+const lastRefresh = new Map<string, number>()
+const COOLDOWN = 5 * 60 * 1000
+const DELIVERY_REFRESH_INTERVAL = 30 * 60 * 1000
 
-export const fetchKomin = unstable_cache(async (): Promise<RestaurantMenu> => {
-  const url = "https://www.pivovarkomin.sk/denne-menu/"
+export function emptyMenu(restaurant: Restaurant): RestaurantMenu {
+  return {
+    ...restaurant,
+    days: [],
+    status: "pending",
+    parserVersion: PARSER_VERSION,
+  }
+}
+export function snapshotFromHtml(
+  restaurant: Restaurant,
+  html: string,
+  checkedAt = new Date()
+): RestaurantMenu {
+  if (html.length > 2000000) throw new MenuParseError("Source too large")
+  const days = parseSource(restaurant.id, html, checkedAt)
+  return {
+    ...restaurant,
+    days,
+    status: "ok",
+    parserVersion: PARSER_VERSION,
+    lastAttemptAt: checkedAt.toISOString(),
+    lastSuccessAt: checkedAt.toISOString(),
+    contentHash: createHash("sha256")
+      .update(JSON.stringify(days))
+      .digest("hex"),
+  }
+}
+
+export async function ingestRestaurant(
+  restaurant: Restaurant,
+  previous: RestaurantMenu | null,
+  fetcher: typeof fetch = fetch
+): Promise<RestaurantMenu> {
+  const lastAttemptAt = new Date().toISOString()
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      next: { revalidate: 86400 }
-    })
-    const html = await res.text()
-    const $ = cheerio.load(html)
-    
-    const days: DayMenu[] = []
-    
-    $("h2.elementor-heading-title").each((_, el) => {
-      const title = $(el).text().trim()
-      const isDay = DAYS_SK.some(d => title.toLowerCase().includes(d.toLowerCase()))
-      
-      if (isDay) {
-        // Find the next text-editor widget containing the menu
-        const container = $(el).closest('.elementor-widget-heading').next('.elementor-widget-text-editor')
-        const itemsText = container.text().trim()
-        
-        // Split by newlines and clean up, split by number if joined
-        // Add newline before numbers like 1:, 2: if they are stuck
-        const formattedText = itemsText.replace(/([0-9]:)/g, '\n$1')
-        const lines = formattedText.split('\n').map(l => l.trim()).filter(l => l.length > 0)
-        
-        const items: MenuItem[] = lines.map(line => {
-          return { name: line }
-        })
+    const { url, init } = menuSourceRequest(restaurant)
+    const response = await fetcher(url, init)
+    if (!response.ok) throw new Error(`Source HTTP ${response.status}`)
+    const html = await response.text()
+    return snapshotFromHtml(restaurant, html, new Date(lastAttemptAt))
+  } catch (error) {
+    const parseFailure = error instanceof MenuParseError
+    console.error(
+      `[obedy:${restaurant.id}] ${parseFailure ? "parse" : "fetch"} failed`
+    )
+    return {
+      ...emptyMenu(restaurant),
+      ...previous,
+      ...restaurant,
+      lastAttemptAt,
+      status: parseFailure ? "parse-error" : "fetch-error",
+      error: parseFailure
+        ? "Zo zdroja sa nepodarilo overiť platné denné menu."
+        : "Zdroj menu sa nepodarilo načítať.",
+    }
+  }
+}
 
-        days.push({
-          date: title,
-          items
-        })
+async function storedMenu(restaurant: Restaurant) {
+  try {
+    return await readSnapshot(restaurant.id)
+  } catch {
+    return {
+      ...emptyMenu(restaurant),
+      status: "fetch-error" as const,
+      error: "Uložené menu je dočasne nedostupné.",
+    }
+  }
+}
+
+async function refreshRestaurant(
+  restaurant: Restaurant
+): Promise<RestaurantMenu> {
+  const running = inFlight.get(restaurant.id)
+  if (running) return running
+  const task = (async () => {
+    const previous = await storedMenu(restaurant)
+    const latest = Math.max(
+      lastRefresh.get(restaurant.id) ?? 0,
+      Date.parse(previous?.lastAttemptAt ?? "") || 0
+    )
+    if (previous && Date.now() - latest < COOLDOWN) return previous
+    lastRefresh.set(restaurant.id, Date.now())
+    const next = await ingestRestaurant(restaurant, previous)
+    try {
+      await writeSnapshot(next)
+    } catch {
+      console.error(`[obedy:${restaurant.id}] snapshot persistence failed`)
+      return {
+        ...next,
+        error: "Menu sa načítalo, ale nepodarilo sa uložiť aktualizáciu.",
       }
-    })
-
-    return {
-      id: "komin",
-      name: "Pivovar Komín",
-      url,
-      days
     }
-  } catch (error) {
-    console.error("Komin fetch error:", error)
-    return { id: "komin", name: "Pivovar Komín", url, days: [], error: "Nepodarilo sa načítať menu" }
-  }
-}, ["komin-menu"], { revalidate: 86400 })
-
-export const fetchNostalgia = unstable_cache(async (): Promise<RestaurantMenu> => {
-  const url = "https://www.nostalgianivy.sk/"
+    return next
+  })()
+  inFlight.set(restaurant.id, task)
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      next: { revalidate: 86400 }
-    })
-    const html = await res.text()
-    const $ = cheerio.load(html)
-
-    let menuData: any = null
-    $('script[type="application/ld+json"]').each((_, el) => {
-      try {
-        const data = JSON.parse($(el).html() || "{}")
-        if (data["@type"] === "Restaurant" && data.hasMenu) {
-          menuData = data.hasMenu
-        }
-      } catch (e) {}
-    })
-
-    const days: DayMenu[] = []
-    
-    if (menuData && menuData.hasMenuSection) {
-      menuData.hasMenuSection.forEach((section: any) => {
-        const title = section.name || ""
-        const isDay = DAYS_SK.some(d => title.toLowerCase().includes(d.toLowerCase()))
-        
-        if (isDay && section.hasMenuItem) {
-          const items: MenuItem[] = section.hasMenuItem.map((item: any) => ({
-            name: item.name,
-            price: item.offers?.price ? `${item.offers.price} €` : undefined,
-            description: item.description
-          }))
-          
-          days.push({
-            date: title,
-            items
-          })
-        }
-      })
-    }
-
-    return {
-      id: "nostalgia",
-      name: "Nostalgia Nivy",
-      url,
-      days
-    }
-  } catch (error) {
-    console.error("Nostalgia fetch error:", error)
-    return { id: "nostalgia", name: "Nostalgia Nivy", url, days: [], error: "Nepodarilo sa načítať menu" }
+    return await task
+  } finally {
+    inFlight.delete(restaurant.id)
   }
-}, ["nostalgia-menu"], { revalidate: 86400 });
+}
 
-export const fetchDulak = unstable_cache(async (): Promise<RestaurantMenu> => {
-  const targetUrl = "https://restauracie.sme.sk/restauracia/dulak-kosicka_11298-ruzinov_2980/denne-menu"
-  const url = `https://r.jina.ai/${targetUrl}`
-  try {
-    const res = await fetch(url, {
-      headers: { 
-        "Accept": "text/html",
-        "X-Return-Format": "html"
-      },
-      next: { revalidate: 86400 }
-    })
-    
-    if (!res.ok) throw new Error(`Jina AI returned ${res.status}`)
-    const html = await res.text()
-    
-    const $ = cheerio.load(html)
-    const days: DayMenu[] = []
-
-    // Process both today and other days
-    $('.dnesne_menu, .ostatne_menu').each((_, dayEl) => {
-      const dateText = $(dayEl).find('h2').text().replace(/\s+/g, ' ').trim()
-      
-      const items: MenuItem[] = []
-      $(dayEl).find('.jedlo_polozka').each((_, itemEl) => {
-        const name = $(itemEl).find('.left').text().replace(/\s+/g, ' ').trim()
-        const price = $(itemEl).find('.right b').text().replace(/\s+/g, ' ').trim()
-        
-        if (name) {
-          items.push({
-            name,
-            price: price || undefined
-          })
-        }
-      })
-
-      if (dateText && items.length > 0) {
-        days.push({
-          date: dateText,
-          items
-        })
-      }
-    })
-
-    return {
-      id: "dulak",
-      name: "Dulak",
-      url: targetUrl,
-      days
-    }
-  } catch (error) {
-    console.error("Dulak fetch error:", error)
-    return {
-      id: "dulak",
-      name: "Dulak",
-      url: targetUrl,
-      days: [],
-      error: "Nepodarilo sa načítať menu z Dulak (Jina AI bypass zlyhal)."
-    }
-  }
-}, ["dulak-menu"], { revalidate: 86400 })
+export async function refreshAllMenus() {
+  return Promise.all(RESTAURANTS.map(refreshRestaurant))
+}
 
 export async function fetchAllMenus(): Promise<RestaurantMenu[]> {
-  return Promise.all([
-    fetchKomin(),
-    fetchNostalgia(),
-    fetchDulak()
-  ])
+  const menus = await Promise.all(
+    RESTAURANTS.map(async (restaurant) => ({
+      ...emptyMenu(restaurant),
+      ...(await storedMenu(restaurant)),
+      ...restaurant,
+    }))
+  )
+  // A fresh install and an unscheduled local preview must remain useful.
+  // Refresh only stale attempts; cooldown/coalescing also covers the public button.
+  if (
+    menus.some(
+      (menu) =>
+        !menu.lastAttemptAt ||
+        Date.now() - Date.parse(menu.lastAttemptAt) > DELIVERY_REFRESH_INTERVAL
+    )
+  )
+    return refreshAllMenus()
+  return menus
+}
+
+// Capture the request clock outside React rendering and pass it as data.
+export async function fetchMenuContext() {
+  const referenceTime = Date.now()
+  return {
+    menus: await fetchAllMenus(),
+    referenceTime,
+    today: todayInBratislava(new Date(referenceTime)),
+  }
 }

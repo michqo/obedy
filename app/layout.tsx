@@ -14,9 +14,26 @@ const fontMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Obedy — miqal",
+  title: "Obedy — dobrý obed pri Nivách / miqal",
+  metadataBase: new URL("https://obedy.miqal.xyz"),
+  openGraph: {
+    title: "Obedy / miqal",
+    description:
+      "Tri známe miesta. Jeden prehľad. Komín, Nostalgia a Dulak pri Nivách.",
+    locale: "sk_SK",
+    type: "website",
+    images: [
+      {
+        url: "/preview.jpg",
+        width: 1280,
+        height: 1000,
+        alt: "Obedy — denné menu troch reštaurácií",
+      },
+    ],
+  },
   description:
-    "Denné obedové menu bratislavských reštaurácií na jednom mieste. Pozrite si dnešnú ponuku a ceny jedál.",
+    "Komín, Nostalgia a Dulak. Pozrite si ich denné obedové menu a ceny na vybraný deň.",
+  twitter: { card: "summary_large_image", images: ["/preview.jpg"] },
 }
 
 export default function RootLayout({

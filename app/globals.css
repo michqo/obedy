@@ -7,7 +7,385 @@
   --miqal-font-sans: var(--font-geist-sans);
   --miqal-font-mono: var(--font-geist-mono);
 }
-
 @theme inline {
   --font-heading: var(--miqal-font-sans);
+}
+.obedy-workspace {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 32px 24px;
+}
+.workspace-intro {
+  margin-bottom: 28px;
+}
+.eyebrow {
+  font-family: var(--miqal-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted-foreground);
+}
+.workspace-intro h1 {
+  margin-top: 10px;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+.workspace-intro h1 span {
+  color: var(--app-obedy);
+}
+.intro-copy {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.date-section {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.date-heading,
+.date-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.date-heading {
+  justify-content: space-between;
+  gap: 16px;
+}
+.date-heading h2 {
+  font-size: 16px;
+  font-weight: 500;
+}
+.date-context {
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.date-picker input {
+  min-height: 44px;
+  width: 145px;
+  padding: 8px;
+  border: 1px solid var(--input);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  color-scheme: light;
+  font-size: 13px;
+}
+.dark .date-picker input {
+  color-scheme: dark;
+}
+.icon-control,
+.text-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  gap: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.icon-control {
+  width: 44px;
+  flex-shrink: 0;
+}
+.text-control {
+  padding: 8px 10px;
+}
+.icon-control:hover,
+.text-control:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.text-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.day-notice {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: var(--secondary);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.menu-results {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  align-items: start;
+}
+.restaurant-section {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+}
+.restaurant-header {
+  padding: 20px 20px 16px;
+}
+.area-label {
+  font-family: var(--miqal-font-mono);
+  color: var(--app-obedy);
+}
+.restaurant-title {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.restaurant-title a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.restaurant-title a svg {
+  color: var(--muted-foreground);
+}
+.restaurant-title a:hover {
+  color: var(--primary);
+}
+.restaurant-header p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.restaurant-header p span {
+  display: block;
+  margin-left: 0;
+}
+.dish-list {
+  padding: 0 20px;
+}
+.dish-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.dish-name {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.dish-price {
+  padding-top: 2px;
+  font-family: var(--miqal-font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dish-price.text-muted-foreground {
+  font-family: var(--miqal-font-sans);
+  font-size: 10px;
+}
+.dish-meta {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  line-height: 1.6;
+}
+.menu-notice {
+  margin: 0 20px 12px;
+  padding: 10px 12px;
+  background: var(--secondary);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.menu-empty {
+  padding: 4px 20px 16px;
+  font-size: 13px;
+}
+.original-menu {
+  padding: 0 20px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.7;
+}
+.original-menu summary {
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+.original-menu li {
+  padding: 6px 0;
+}
+.restaurant-footer {
+  padding: 8px 20px;
+  border-top: 1px solid var(--border);
+}
+.restaurant-footer > span {
+  display: none;
+}
+.restaurant-footer > div {
+  justify-content: space-between;
+}
+.update-row,
+.workspace-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.update-row {
+  margin-top: 16px;
+}
+.feedback-message {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.feedback-message:empty {
+  display: none;
+}
+.source-health {
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.source-health summary {
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+  width: fit-content;
+}
+.source-health li {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+.workspace-footer {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.detail-heading {
+  margin: 24px 0;
+}
+.detail-heading h1 {
+  margin-top: 10px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+.section-label {
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+.dated-history {
+  margin-top: 32px;
+}
+.dated-history > h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+.history-day {
+  border-top: 1px solid var(--border);
+}
+.history-day > summary {
+  padding: 18px 0;
+  cursor: pointer;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+.history-day > summary span {
+  float: right;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.history-day .restaurant-section {
+  margin-bottom: 20px;
+}
+@media (min-width: 1000px) {
+  .menu-results {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .obedy-workspace {
+    padding: 24px 20px;
+  }
+  .date-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .date-actions {
+    width: 100%;
+  }
+  .date-actions .text-control {
+    margin-left: auto;
+  }
+  .date-picker input {
+    font-size: 16px;
+    width: 150px;
+  }
+  .workspace-intro h1 {
+    font-size: 30px;
+  }
+  .restaurant-detail .restaurant-footer > span {
+    display: block;
+  }
+}
+@media (max-width: 380px) {
+  .obedy-workspace {
+    padding: 24px 16px;
+  }
+  .date-actions {
+    gap: 2px;
+  }
+  .date-actions .icon-control {
+    width: 40px;
+  }
+  .date-picker input {
+    width: 136px;
+  }
+  .date-actions .text-control {
+    padding: 8px 6px;
+  }
+}
+
+.date-heading h2::first-letter {
+  text-transform: uppercase;
+}
+.primary-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 13px;
+  cursor: pointer;
 }
